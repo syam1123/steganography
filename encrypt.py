@@ -3,6 +3,10 @@ try:
   import Image
 except ImportError, e:
   from PIL import Image
+try:
+  import pylab
+except ImportError, e:
+  print 'pylab is not imported '
 import numpy as np
 import os
 
@@ -77,5 +81,7 @@ def encode(string, imagefilename, key, keyfilename):
                ###its 12:40 in the mid night good night bro
         
 if __name__ == "__main__":
-    print shuffle_array([i for i in range(300)],11235879)
-    print readImage('workhard.jpg')
+    shuffled_array = shuffle_array([i for i in range(300)],675827)
+    #print readImage('workhard.jpg')
+    pylab.plot(shuffled_array);
+    pylab.show();
