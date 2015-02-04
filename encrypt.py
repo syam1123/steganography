@@ -14,12 +14,30 @@ import os
 project_home = os.getcwd()
 slicing_constant = 0x100
 
-def prime(num):
-  for i in range(2,num/2):
-    if (num%i==0):
-      return False
-      break;
-  return True;
+
+
+def memoize(f):
+    """ Memoization decorator for a function taking a single argument """
+    class memodict(dict):
+        """ The dictionary that will act as hashmap for Memoization """
+        def __missing__(self, key):
+            print 'no memo'
+            ret = self[key] = f(key)
+            return ret 
+    return memodict().__getitem__
+
+@memoize
+def prime(n):
+  """ Returns prime number below n  using seive of eratosthenas"""
+  np1 = n + 1
+  s = list(range(np1)) # leave off `list()` in Python 2
+  s[1] = False
+  sqrtn = int(round(n**0.5))
+  for i in xrange(sqrtn + 1):
+      if s[i]:
+          s[i*i: np1: i] = [False] * len(xrange(i*i, np1, i))
+  return  filter(lambda x:x is not False, s)[-1]
+
 
 def readImage(filename):
     '''
@@ -79,9 +97,32 @@ def encode(string, imagefilename, key, keyfilename):
                bit_to_file = 0x01&(str_bit^(shuffle_array[8*(str_index+i)+bit_index]))
                #####Note : put this bit to file and you are done
                ###its 12:40 in the mid night good night bro
-        
+
+
+def plotArray(shuffled_array):
+    """
+       plot array gven any dimensonal array
+       assuming : pylab is imported
+    """
+    try:
+      pylab.plot(shuffled_array);
+      pylab.show()
+    except Exception, e:
+      print "Exception while plotng"
+    else:
+      print "succesfullly plotted "
+    finally:
+      pass
+    
 if __name__ == "__main__":
-    shuffled_array = shuffle_array([i for i in range(300)],675827)
-    #print readImage('workhard.jpg')
-    pylab.plot(shuffled_array);
-    pylab.show();
+    #image = readImage('workhard.jpg')
+    #shuffled_array = shuffle_array(image,123)
+    #print len(shuffled_array)
+    #print len(image)
+    #plotArray(shuffled_array)
+    print prime(100000)
+    print prime(200)
+    print prime(110)
+    print prime(100000)
+    print prime(100000)
+    print prime(100000)
