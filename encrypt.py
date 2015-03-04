@@ -14,14 +14,12 @@ import os
 project_home = os.getcwd()
 slicing_constant = 0x100
 
-
-
 def memoize(f):
     """ Memoization decorator for a function taking a single argument """
     class memodict(dict):
         """ The dictionary that will act as hashmap for Memoization """
         def __missing__(self, key):
-            print 'no memo'
+            #print 'no memo'
             ret = self[key] = f(key)
             return ret 
     return memodict().__getitem__
@@ -37,7 +35,6 @@ def prime(n):
       if s[i]:
           s[i*i: np1: i] = [False] * len(xrange(i*i, np1, i))
   return  filter(lambda x:x is not False, s)[-1]
-
 
 def readImage(filename):
     '''
@@ -56,26 +53,28 @@ def readImage(filename):
     return [(i,j) for i, j in enumerate(xrange(slicing_start,img.size,slicing_diff))]
 
 def shuffle_array(array, key):
-    sh_array = list()
-    key = key & 0xff;
-    if key < len(array):
-      sh_array.append(array[key])
     for x in range(key,0,-1):
-      if prime(x) == 1:
-        pprime = x
-        break;
-      else:
-        continue;
-    add = key + pprime
-    for i in range(0,len(array)):
-      if (( add ) >= len(array)):
-        add = add - len(array)
-        a=array[add]
-      elif ((add) <= len(array)-1):
-        a=array[add]
-        sh_array.append(a)
-        add = pprime + add
-    return sh_array;#hey guys its the main job...
+        if prime(x)==1:
+            pprime = x
+            break;
+        else:
+            continue;
+    pprime = prime(key)
+    sh_array = list()
+    fact = len(array)   
+    #prime = 17
+    while fact>0:
+        div = pprime
+        while div>0:
+            div = fact%div
+            div = div/3
+            sh_array.append(array[div])
+            array.pop(div)
+            fact = fact-1
+            div = div*2
+    return sh_array
+
+
 
 def encode(string, imagefilename, key, keyfilename):
     '''
@@ -89,40 +88,15 @@ def encode(string, imagefilename, key, keyfilename):
     encrypted_home = project_home + 'encrypted'
     encrypted_file = encrypted_home + keyfilename
     shuffled_array = readImage(imagefilename)
-    string_as_bytearray = map(lambda x:bin(x)[2:], bytearray(string, encoding = "utf-8", errors="strict"))
+    string_as_bytearray = map(lambda x:map(int, bin(x)[2:]), bytearray(string, encoding = "utf-8", errors="strict"))
     for i in xrange(0, len(string_as_bytearray), 32):
-        shuffled_array = shuffle_array(shuffle_array,key)
+        shuffled_array = shuffle_array(shuffled_array,key)
         for str_index, str_byte in enumerate(string_as_bytearray[i:i+32]):
+            write_byte = 0x00;
             for bit_index, str_bit in enumerate(str_byte):
-               bit_to_file = 0x01&(str_bit^(shuffle_array[8*(str_index+i)+bit_index]))
-               #####Note : put this bit to file and you are done
-               ###its 12:40 in the mid night good night bro
-
-
-def plotArray(shuffled_array):
-    """
-       plot array gven any dimensonal array
-       assuming : pylab is imported
-    """
-    try:
-      pylab.plot(shuffled_array);
-      pylab.show()
-    except Exception, e:
-      print "Exception while plotng"
-    else:
-      print "succesfullly plotted "
-    finally:
-      pass
-    
+               bit_to_file = 0x01&(str_bit^(shuffled_array[8*(str_index+i)+bit_index][1]))
+               write_byte = write_byte << 1 |  bit_to_file
+            print write_byte
+        
 if __name__ == "__main__":
-    #image = readImage('workhard.jpg')
-    #shuffled_array = shuffle_array(image,123)
-    #print len(shuffled_array)
-    #print len(image)
-    #plotArray(shuffled_array)
-    print prime(100000)
-    print prime(200)
-    print prime(110)
-    print prime(100000)
-    print prime(100000)
-    print prime(100000)
+    encode('sarath','workhard.jpg',11235,'enc_sarath')
