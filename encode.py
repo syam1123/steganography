@@ -104,10 +104,8 @@ def encode(string, imagefilename, key, keyfilename):
     encrypted_home = project_home + 'encrypted'
     encrypted_file = encrypted_home + keyfilename
     shuffled_array = readImage(imagefilename)
-    #print shuffled_array
-    open("enc_syamsp.txt","w").close()
+    open(keyfilename,"w").close()
     chunks_str = chunks(string,32)
-    #print chunks_str
     for i in range (0, len(chunks_str)):
       string = chunks_str[i]
       encrypt_array = []
@@ -117,7 +115,6 @@ def encode(string, imagefilename, key, keyfilename):
     
       for i in xrange(0, len(string_as_bytearray), 32):
           shuffled_array = shuffle_array(shuffled_array,key)
-          print shuffled_array
           for str_index, str_byte in enumerate(string_as_bytearray[i:i+32]):
               write_byte = 0x00;
               #print str_byte
@@ -128,7 +125,7 @@ def encode(string, imagefilename, key, keyfilename):
                 
               write_byte = int(write_byte)
               
-              encryptedfile = open("enc_syamsp.txt", "a")
+              encryptedfile = open(keyfilename, "a")
               encryptedfile.write('%s' % write_byte)
               encryptedfile.write("+")
 
@@ -144,31 +141,24 @@ def decode(imagefilename, key, keyfilename):
   enc_array = list()
   open("output_steg.txt","w").close()
   shuffled_array = shuffle_array(shuffled_array, key)
-  #print shuffled_array
-  with open('enc_syamsp.txt') as f:
+  with open(keyfilename) as f:
     encrypted_array = f.readlines()
     encrypt_array = ''.join(encrypted_array)
-  #print encrypt_array
-  #print len(encrypt_array)
 
   for i in xrange(0,len(encrypt_array)):
     if(encrypt_array[i] == "+"):
       i = i+1
-      enc_str = ''.join(enc_array)
-      del enc_array[:]
+      enc_str = ''.join(enc_array)'''copy contents of file b/w two + symbols.which is the integer value'''
+      del enc_array[:]'''clear the enc_array after copying it into the enc_str'''
       enc_str = int(enc_str)
       enc_str = bin(enc_str)[2:]
-      #print enc_str
       output_str = 0x00
       for j in range(0,len(enc_str)):
-        file_bit = enc_str[j:j+1]
-        #print file_bit
+        file_bit = enc_str[j:j+1]'''getting by single bits at a time'''
         file_bit = int(file_bit)
-        #print "the binary file bit"
         
         bit_to_print = 0x01&(int(bin(file_bit)[2:])^(shuffled_array[j][1]))
         output_str = output_str << 1 | bit_to_print
-      print "output str"
       output_str = chr(output_str)
       print output_str
       output_file = open("output_steg.txt", "a")
@@ -181,21 +171,8 @@ def decode(imagefilename, key, keyfilename):
             
         
 if __name__ == "__main__":
-  select = raw_input("what do you want to hide??,a file or a string? press '1' for file '2' for else:")
-  if(select == '1'):
-    f = file(raw_input("Enter filename: "), 'r')
-    string = f.readlines()
-    string = "".join(string)
-    print string
-  elif(select == '2'):
-    string = raw_input("enter the string:")
-  else:
-    print "wrong selection"
-  image = raw_input("enter the image path:")
-  key = raw_input("enter the key:")
-  key = int(key)
-  enc_file = raw_input("enter the file to which secret data encrypted:")
-  encode(string, image, key, enc_file)
+
+  encode('this is not a good day', 'workhard.jpg', 1123, 'enc_syamsp.txt')
   print "successfully hide"
-  decode(image, key,enc_file)
+  decode('workhard.jpg', 1123,'enc_syamsp.txt')
 
