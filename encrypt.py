@@ -1,4 +1,3 @@
-#!/usr/bin/python 
 try:
   import Image
 except ImportError, e:
@@ -9,6 +8,10 @@ except ImportError, e:
   print 'pylab is not imported '
 import numpy as np
 import os
+import pickle
+import binascii
+import hashlib
+#import bitarray
 
 
 project_home = os.getcwd()
@@ -35,6 +38,18 @@ def prime(n):
       if s[i]:
           s[i*i: np1: i] = [False] * len(xrange(i*i, np1, i))
   return  filter(lambda x:x is not False, s)[-1]
+def md5Checksum(filePath):
+  with open(filePath, 'rb') as fh:
+    m = hashlib.md5()
+    while True:
+      data = fh.read(8192)
+      if not data:
+        break
+      m.update(data)
+    return m.hexdigest()
+def chunks(l, n):
+    n = max(1, n)
+    return [l[i:i + n] for i in range(0, len(l), n)]
 
 def readImage(filename):
     '''
@@ -50,7 +65,7 @@ def readImage(filename):
     img = (np.asarray(Image.open(images_home + filename))[:,:,0]).flatten()
     slicing_diff = img.size // slicing_constant 
     slicing_start = slicing_diff // 2
-    return [(i,j) for i, j in enumerate(xrange(slicing_start,img.size,slicing_diff))]
+    return [(i,j/7) for i, j in enumerate(xrange(slicing_start,img.size,slicing_diff))]
 
 def shuffle_array(array, key):
     for x in range(key,0,-1):
@@ -73,6 +88,7 @@ def shuffle_array(array, key):
             fact = fact-1
             div = div*2
     return sh_array
+    
 
 
 
@@ -85,18 +101,79 @@ def encode(string, imagefilename, key, keyfilename):
           key is the supreme power ...
           return False on failure or the obvious counter part :)        
     '''
+    print "String :" , string
     encrypted_home = project_home + 'encrypted'
     encrypted_file = encrypted_home + keyfilename
     shuffled_array = readImage(imagefilename)
-    string_as_bytearray = map(lambda x:map(int, bin(x)[2:]), bytearray(string, encoding = "utf-8", errors="strict"))
-    for i in xrange(0, len(string_as_bytearray), 32):
-        shuffled_array = shuffle_array(shuffled_array,key)
-        for str_index, str_byte in enumerate(string_as_bytearray[i:i+32]):
-            write_byte = 0x00;
-            for bit_index, str_bit in enumerate(str_byte):
-               bit_to_file = 0x01&(str_bit^(shuffled_array[8*(str_index+i)+bit_index][1]))
-               write_byte = write_byte << 1 |  bit_to_file
-            print write_byte
+    open(keyfilename,"w").close()
+    chunks_str = chunks(string,32)
+    for i in range (0, len(chunks_str)):
+      string = chunks_str[i]
+      encrypt_array = []
+      #print string
+      string_as_bytearray = map(lambda x:map(int, bin(x)[2:]), bytearray(string, encoding = "utf-8", errors="strict"))
+      #print string_as_bytearray
+    
+      for i in xrange(0, len(string_as_bytearray), 32):
+          shuffled_array = shuffle_array(shuffled_array,key)
+          print "shuffledArrary :", len(shuffled_array)
+          for str_index, str_byte in enumerate(string_as_bytearray[i:i+32]):
+              write_byte = 0x00;
+              print str_byte
+              for bit_index, str_bit in enumerate(str_byte):
+                bit_to_file = 0x01&(str_bit^(shuffled_array[8*(str_index+i)+bit_index][1]))
+                write_byte = write_byte << 1 |  bit_to_file
+                print str_bit,'^',shuffled_array[8*(str_index+i)+bit_index][1],", ",
+              print bin(write_byte)[2:]
+              write_byte = int(write_byte)
+              encryptedfile = open(keyfilename, "a")
+              encryptedfile.write('%s' % write_byte)
+              encryptedfile.write("+")
+
+
+            
+
+
+def decode(imagefilename, key, keyfilename):
+  encrypted_home = project_home + 'encrypted'
+  encrypted_file = encrypted_home + keyfilename
+  shuffled_array = readImage(imagefilename)
+  encrypt_array = list()
+  enc_array = list()
+  open("output_steg.txt","w").close()
+  shuffled_array = shuffle_array(shuffled_array, key)
+  with open(keyfilename) as f:
+    encrypted_array = f.readlines()
+    encrypt_array = ''.join(encrypted_array)
+
+  for i in xrange(0,len(encrypt_array)):
+    if(encrypt_array[i] == "+"):
+      i = i+1
+      enc_str = ''.join(enc_array)##'''copy contents of file b/w two + symbols.which is the integer value##'''
+      del enc_array[:]#'''clear the enc_array after copying it into the enc_str#'''
+      enc_str = int(enc_str)
+      enc_str = bin(enc_str)[2:]
+      output_str = 0x00
+      for j in range(0,len(enc_str)):
+        file_bit = enc_str[j:j+1]#'''getting by single bits at a time#'''
+        file_bit = int(file_bit)
+        
+        bit_to_print = 0x01&(int(bin(file_bit)[2:])^(shuffled_array[j][1]))
+        output_str = output_str << 1 | bit_to_print
+      output_str = chr(output_str)
+      print output_str
+      output_file = open("output_steg.txt", "a")
+      output_file.write('%s' % output_str)
+
+
+    else:
+      enc_array.append(encrypt_array[i])
+           
+            
         
 if __name__ == "__main__":
-    encode('sarath','workhard.jpg',11235,'enc_sarath')
+
+  encode('sarath', 'workhard.jpg', 1123, 'enc_syamsp.txt')
+  print "successfully hide"
+  decode('workhard.jpg', 1123,'enc_syamsp.txt')
+
