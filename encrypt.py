@@ -111,20 +111,27 @@ def encode(string, imagefilename, key, keyfilename):
       string = chunks_str[i]
       encrypt_array = []
       #print string
+      shuffled_array = shuffle_array(shuffled_array,key)
       string_as_bytearray = map(lambda x:map(int, bin(x)[2:]), bytearray(string, encoding = "utf-8", errors="strict"))
       #print string_as_bytearray
-    
+   
       for i in xrange(0, len(string_as_bytearray), 32):
-          shuffled_array = shuffle_array(shuffled_array,key)
+          
           print "shuffledArrary :", len(shuffled_array)
+          #print shuffled_array
           for str_index, str_byte in enumerate(string_as_bytearray[i:i+32]):
               write_byte = 0x00;
-              print str_byte
+              #print str_byte
+              if(len(str_byte) < 7):
+              	while(len(str_byte) !=7):
+              		str_byte = [0]+str_byte
               for bit_index, str_bit in enumerate(str_byte):
                 bit_to_file = 0x01&(str_bit^(shuffled_array[8*(str_index+i)+bit_index][1]))
+                
                 write_byte = write_byte << 1 |  bit_to_file
                 print str_bit,'^',shuffled_array[8*(str_index+i)+bit_index][1],", ",
-              print bin(write_byte)[2:]
+                #print 8*(str_index+i)+bit_index
+              #print bin(write_byte)[2:]
               write_byte = int(write_byte)
               encryptedfile = open(keyfilename, "a")
               encryptedfile.write('%s' % write_byte)
@@ -142,10 +149,11 @@ def decode(imagefilename, key, keyfilename):
   enc_array = list()
   open("output_steg.txt","w").close()
   shuffled_array = shuffle_array(shuffled_array, key)
+  
   with open(keyfilename) as f:
     encrypted_array = f.readlines()
     encrypt_array = ''.join(encrypted_array)
-
+  s = 0
   for i in xrange(0,len(encrypt_array)):
     if(encrypt_array[i] == "+"):
       i = i+1
@@ -153,13 +161,23 @@ def decode(imagefilename, key, keyfilename):
       del enc_array[:]#'''clear the enc_array after copying it into the enc_str#'''
       enc_str = int(enc_str)
       enc_str = bin(enc_str)[2:]
+      if(len(enc_str) < 7):
+      	while(len(enc_str) != 7):
+			enc_str = "0%s" %enc_str
       output_str = 0x00
-      for j in range(0,len(enc_str)):
+      for j in range(0,7):
+      	if(s > 255):
+      		s = 0
+      		shuffled_array = shuffle_array(shuffled_array,key)
         file_bit = enc_str[j:j+1]#'''getting by single bits at a time#'''
         file_bit = int(file_bit)
+        bit_to_print = 0x01&(int(bin(file_bit)[2:])^(shuffled_array[s][1]))
         
-        bit_to_print = 0x01&(int(bin(file_bit)[2:])^(shuffled_array[j][1]))
         output_str = output_str << 1 | bit_to_print
+        #print int(bin(file_bit)[2:]),'^',shuffled_array[s][1],", " ,
+        #print s
+        s = s + 1
+      s = s+1
       output_str = chr(output_str)
       print output_str
       output_file = open("output_steg.txt", "a")
@@ -173,7 +191,7 @@ def decode(imagefilename, key, keyfilename):
         
 if __name__ == "__main__":
 
-  encode('sarath', 'workhard.jpg', 1123, 'enc_syamsp.txt')
+  encode('sarath is good boy and am also a very god boy', 'workhard.jpg', 1123, 'enc_syamsp.txt')
   print "successfully hide"
   decode('workhard.jpg', 1123,'enc_syamsp.txt')
 
